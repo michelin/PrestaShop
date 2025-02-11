@@ -72,6 +72,8 @@ class DbPDOCore extends Db
                 PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4',
                 PDO::MYSQL_ATTR_MULTI_STATEMENTS => _PS_ALLOW_MULTI_STATEMENTS_QUERIES_,
+                PDO::MYSQL_ATTR_SSL_CA => '/etc/ssl/certs/DigiCertGlobalRootCA.crt.pem',
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ]
         );
     }

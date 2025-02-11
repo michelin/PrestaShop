@@ -19,6 +19,10 @@ doctrine:
           1002: "SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"
           # PDO::MYSQL_ATTR_MULTI_STATEMENTS
           1013: '%env(const:runtime:_PS_ALLOW_MULTI_STATEMENTS_QUERIES_)%'
+          # PDO::MYSQL_ATTR_SSL_CA
+          1009: '/etc/ssl/certs/DigiCertGlobalRootCA.crt.pem'
+          #PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
+          1014: false
 
   orm:
     auto_generate_proxy_classes: "%kernel.debug%"
