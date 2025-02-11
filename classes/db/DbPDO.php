@@ -74,6 +74,8 @@ class DbPDOCore extends Db
                 PDO::MYSQL_ATTR_MULTI_STATEMENTS => _PS_ALLOW_MULTI_STATEMENTS_QUERIES_,
                 // FIX This option keeps all data as strings and stops automatic casting to integers, floats and other types
                 PDO::ATTR_STRINGIFY_FETCHES => true,
+                PDO::MYSQL_ATTR_SSL_CA => '/etc/ssl/certs/DigiCertGlobalRootCA.crt.pem',
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ]
         );
     }
