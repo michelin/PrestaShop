@@ -91,36 +91,36 @@ tests/Unit/.phpunit.result.cache
 tests/Integration/.phpunit.result.cache
 tests-legacy/.phpunit.result.cache
 
-/admin-dev/autoupgrade/*
-!/admin-dev/autoupgrade/index.php
-!/admin-dev/autoupgrade/backup/index.php
+/back/autoupgrade/*
+!/back/autoupgrade/index.php
+!/back/autoupgrade/backup/index.php
 
-/admin-dev/backups/*
-!/admin-dev/backups/.htaccess
+/back/backups/*
+!/back/backups/.htaccess
 
-/admin-dev/import/*
-!/admin-dev/import/.htaccess
-!/admin-dev/import/index.php
+/back/import/*
+!/back/import/.htaccess
+!/back/import/index.php
 
-/admin-dev/export/*
-!/admin-dev/export/.htaccess
-!/admin-dev/export/index.php
+/back/export/*
+!/back/export/.htaccess
+!/back/export/index.php
 
 # Downloaded RTL files
-/admin-dev/themes/default/css/bundle/default_rtl.css
-/admin-dev/themes/default/css/bundle/shared_rtl.css
-/admin-dev/themes/default/css/font_rtl.css
-/admin-dev/themes/default/css/overrides_rtl.css
-/admin-dev/themes/default/css/vendor/font-awesome/font-awesome_rtl.css
-/admin-dev/themes/default/css/vendor/nv.d3_rtl.css
-/admin-dev/themes/default/css/vendor/titatoggle-min_rtl.css
-/admin-dev/themes/default/public/theme_rtl.css
-/admin-dev/themes/default/public/*
-/admin-dev/themes/new-theme/css/module/drop_rtl.css
-/admin-dev/themes/new-theme/css/right-sidebar_rtl.css
-/admin-dev/themes/new-theme/public/*
-!/admin-dev/themes/new-theme/public/theme.rtlfix
-!/admin-dev/themes/default/public/theme.rtlfix
+/back/themes/default/css/bundle/default_rtl.css
+/back/themes/default/css/bundle/shared_rtl.css
+/back/themes/default/css/font_rtl.css
+/back/themes/default/css/overrides_rtl.css
+/back/themes/default/css/vendor/font-awesome/font-awesome_rtl.css
+/back/themes/default/css/vendor/nv.d3_rtl.css
+/back/themes/default/css/vendor/titatoggle-min_rtl.css
+/back/themes/default/public/theme_rtl.css
+/back/themes/default/public/*
+/back/themes/new-theme/css/module/drop_rtl.css
+/back/themes/new-theme/css/right-sidebar_rtl.css
+/back/themes/new-theme/public/*
+!/back/themes/new-theme/public/theme.rtlfix
+!/back/themes/default/public/theme.rtlfix
 
 themes/*/cache/*
 themes/core.js.map
