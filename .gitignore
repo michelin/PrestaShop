@@ -214,3 +214,12 @@ tools/build/releases/*
 # Docker configuration
 install.lock
 docker-compose.override.yml
+
+# Custom
+.bash_history
+.bash_profile
+.bashrc
+.composer/
+.composer/*
+.npm/
+.npm/*
