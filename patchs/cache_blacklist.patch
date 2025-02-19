@@ -1,0 +1,13 @@
+diff --git a/classes/cache/Cache.php b/classes/cache/Cache.php
+index 43cb3c769..b2c0edfcb 100644
+--- a/classes/cache/Cache.php
++++ b/classes/cache/Cache.php
+@@ -89,6 +89,8 @@ abstract class CacheCore
+         'page_viewed',
+         'employee',
+         'log',
++        'product',
++        'product_shop'
+     ];
+ 
+     /**
