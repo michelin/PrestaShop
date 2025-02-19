@@ -1,4 +1,9 @@
 <?php
+
+use SiMixCore\Classes\CustomerAddressSiMixCore;
+use SiMixCore\Classes\SiMixCsrfToken;
+use SiMixCore\Classes\SiMixHCaptcha;
+
 /**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
@@ -48,10 +53,46 @@ class RegistrationControllerCore extends FrontController
         $register_form = $this
             ->makeCustomerForm()
             ->setGuestAllowed(false)
-            ->fillWith(Tools::getAllValues());
+            ->fillWith(Tools::getAllValues())
+            ->addCustomZipCodeField()
+            ->addCustomCityField()
+            ->addCustomCountry()
+            ->addCustomAddressField();
+        $desiredOrder = [
+            'id_gender',
+            'firstname',
+            'lastname',
+            'birthday',
+            'custom_address',
+            'custom_city',
+            'custom_zip',
+            'custom_country',
+            'company',
+            'siret',
+            'email',
+            'password',
+            'psgdpr_psgdpr',
+            'ps_dataprivacy_customer_privacy',
+            'ps_emailsubscription_newsletter'
+        ];
+        $register_form->sortFields($desiredOrder);
+        $back = rawurldecode(Tools::getValue('back'));
 
-        // If registration form was submitted
         if (Tools::isSubmit('submitCreate')) {
+            $verifyForm = SiMixHCaptcha::verifyHCaptcha(Tools::getValue('h-captcha-response'));
+            $csrfToken = Tools::getValue('csrf_token_simix');
+            $isValidCsrfToken = SiMixCsrfToken::isValidCsrfToken($csrfToken);
+
+            if (!$isValidCsrfToken) {
+                $this->errors[] = 'CSRF Token not valid.';
+                return $this->redirectWithNotifications($this->context->link->getPageLink('registration'));
+            }
+
+            if (!$verifyForm) {
+                $this->errors[] = 'Recaptcha failed, try again.';
+                return $this->redirectWithNotifications($this->context->link->getPageLink('registration'));
+            }
+
             $hookResult = array_reduce(
                 Hook::exec('actionSubmitAccountBefore', [], null, true),
                 function ($carry, $item) {
@@ -66,6 +107,18 @@ class RegistrationControllerCore extends FrontController
                 // Before that, we need to check if 'back' is legit URL that is on OUR domain, with the right protocol
                 $back = rawurldecode(Tools::getValue('back'));
                 if (Tools::urlBelongsToShop($back)) {
+
+                    try {
+                        CustomerAddressSiMixCore::setAddressByCustomer(
+                            Context::getContext()->customer->id,
+                            $register_form->getField('custom_address')->getValue(),
+                            $register_form->getField('custom_city')->getValue(),
+                            $register_form->getField('custom_zip')->getValue(),
+                            $register_form->getField('custom_country')->getValue()
+                        );
+                    } catch (PrestaShopException $e) {
+                    }
+                    $this->success[] = 'Thank you for signing up! Please check your email and confirm your address to complete your registration and access SiMiX.';
                     return $this->redirectWithNotifications($back);
                 }
 
@@ -80,6 +133,7 @@ class RegistrationControllerCore extends FrontController
         }
 
         $this->context->smarty->assign([
+            'csrf_token_simix' => SiMixCsrfToken::generateToken(),
             'register_form' => $register_form->getProxy(),
             'hook_create_account_top' => Hook::exec('displayCustomerAccountFormTop'),
         ]);
@@ -93,7 +147,7 @@ class RegistrationControllerCore extends FrontController
         $breadcrumb = parent::getBreadcrumbLinks();
 
         $breadcrumb['links'][] = [
-            'title' => $this->trans('Create an account', [], 'Shop.Theme.Customeraccount'),
+            'title' => $this->trans('Sign up', [], 'Shop.Theme.Customeraccount'),
             'url' => $this->context->link->getPageLink('registration'),
         ];
 

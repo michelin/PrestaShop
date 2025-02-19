@@ -231,8 +231,8 @@ class PDFGeneratorCore extends TCPDF
     public function writePage()
     {
         $this->SetHeaderMargin(5);
-        $this->SetFooterMargin(21);
-        $this->setMargins(10, 40, 10);
+        $this->SetFooterMargin(5);
+        $this->setMargins(10, 5, 10);
         $this->AddPage();
         $this->writeHTML($this->content, true, false, true, false, '');
     }

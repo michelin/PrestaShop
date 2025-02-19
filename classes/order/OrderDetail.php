@@ -523,6 +523,11 @@ class OrderDetailCore extends ObjectModel
         $this->download_deadline = '0000-00-00 00:00:00';
         $this->download_hash = null;
 
+        // ************** patch download_hash  **************** //
+        $download_hash = md5(uniqid(rand(), true));
+        $this->download_hash = $download_hash;
+        // ************** patch download_hash  **************** //
+
         if ($id_product_download = ProductDownload::getIdFromIdProduct((int) $product['id_product'])) {
             $product_download = new ProductDownload((int) $id_product_download);
             $this->download_deadline = $product_download->getDeadLine();

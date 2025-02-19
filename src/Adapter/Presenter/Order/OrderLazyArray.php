@@ -194,7 +194,9 @@ class OrderLazyArray extends AbstractLazyArray
                 Currency::getCurrencyInstance((int) $order->id_currency)
             );
 
-            if ($orderPaid && $orderProduct['is_virtual']) {
+            $orderProduct['is_virtual'] =  1;
+//            if ($orderPaid && $orderProduct['is_virtual']) {
+            if ($orderPaid) {
                 $id_product_download = ProductDownload::getIdFromIdProduct($orderProduct['product_id']);
                 $product_download = new ProductDownload($id_product_download);
                 if ($product_download->display_filename != '') {

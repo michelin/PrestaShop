@@ -23,6 +23,9 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
  */
+
+use SiMixCore\Classes\SiMixHCaptcha;
+
 class AuthControllerCore extends FrontController
 {
     /** @var bool */
@@ -55,8 +58,14 @@ class AuthControllerCore extends FrontController
         );
 
         if (Tools::isSubmit('submitLogin')) {
-            if ($login_form->submit()) {
-                $should_redirect = true;
+            $recaptcha = Tools::getValue('h-captcha-response');
+            $verifyForm = SiMixHCaptcha::verifyHCaptcha($recaptcha);
+            if ($verifyForm) {
+                if ($login_form->submit()) {
+                    $should_redirect = true;
+                } else {
+                    $this->errors[] = 'The information to log in with are incorrect.';
+                }
             }
         }
 
@@ -88,17 +97,17 @@ class AuthControllerCore extends FrontController
         }
     }
 
-    public function getBreadcrumbLinks()
-    {
-        $breadcrumb = parent::getBreadcrumbLinks();
-
-        $breadcrumb['links'][] = [
-            'title' => $this->trans('Log in to your account', [], 'Shop.Theme.Customeraccount'),
-            'url' => $this->context->link->getPageLink('authentication'),
-        ];
-
-        return $breadcrumb;
-    }
+//    public function getBreadcrumbLinks()
+//    {
+//        $breadcrumb = parent::getBreadcrumbLinks();
+//
+//        $breadcrumb['links'][] = [
+//            'title' => $this->trans('Log in to your account', [], 'Shop.Theme.Customeraccount'),
+//            'url' => $this->context->link->getPageLink('authentication'),
+//        ];
+//
+//        return $breadcrumb;
+//    }
 
     /**
      * {@inheritdoc}

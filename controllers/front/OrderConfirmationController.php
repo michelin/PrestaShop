@@ -23,9 +23,11 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
  */
+use PrestaShop\PrestaShop\Adapter\Presenter\Object\ObjectPresenter;
 use PrestaShop\PrestaShop\Adapter\Presenter\Order\OrderPresenter;
 use PrestaShop\PrestaShop\Core\Security\PasswordPolicyConfiguration;
 use ZxcvbnPhp\Zxcvbn;
+require_once _PS_MODULE_DIR_ . 'simixcore/classes/PaymentCredit.php';
 
 class OrderConfirmationControllerCore extends FrontController
 {
@@ -46,6 +48,7 @@ class OrderConfirmationControllerCore extends FrontController
     protected $customer;
     public $reference; // Deprecated
     public $order_presenter; // Deprecated
+    public $isPaid;
 
     /**
      * Initialize order confirmation controller.
@@ -71,6 +74,10 @@ class OrderConfirmationControllerCore extends FrontController
             $this->checkFreeOrder();
         }
 
+        if (true === (bool) Tools::getValue('credit_order')) {
+            $this->checkCreditOrder();
+        }
+
         /*
          * Because of order splitting scenarios, we must get the data by id_cart parameter (not id_order),
          * so we can display all orders made from this cart.
@@ -87,25 +94,14 @@ class OrderConfirmationControllerCore extends FrontController
 
         $redirectLink = $this->context->link->getPageLink('history');
 
-        // The confirmation link must contain a unique order secure key matching the key saved in database,
-        // this prevents user to view other customer's order confirmations
-        if (!$this->id_order || !$this->id_module || !$this->secure_key || empty($this->secure_key)) {
-            Tools::redirect($redirectLink . (Tools::isSubmit('slowvalidation') ? '&slowvalidation' : ''));
-        }
-
-        if (!Validate::isLoadedObject($this->order) || $this->secure_key != $this->order->secure_key) {
-            Tools::redirect($redirectLink);
-        }
-
-        // Free order uses -1 as id_module, it has a special check here
-        if ($this->id_module == -1) {
-            if ($this->order->module !== 'free_order') {
-                Tools::redirect($redirectLink);
+        if ($this->isPaid) {
+            // The confirmation link must contain a unique order secure key matching the key saved in database,
+            // this prevents user to view other customer's order confirmations
+            if (!$this->id_order || !$this->id_module || !$this->secure_key || empty($this->secure_key)) {
+                Tools::redirect($redirectLink . (Tools::isSubmit('slowvalidation') ? '&slowvalidation' : ''));
             }
-        } else {
-            // Otherwise we run a normal check that module matches
-            $module = Module::getInstanceById((int) ($this->id_module));
-            if ($this->order->module !== $module->name) {
+
+            if (!Validate::isLoadedObject($this->order) || $this->secure_key != $this->order->secure_key) {
                 Tools::redirect($redirectLink);
             }
         }
@@ -217,7 +213,7 @@ class OrderConfirmationControllerCore extends FrontController
             'HOOK_ORDER_CONFIRMATION' => $this->displayOrderConfirmation($this->order),
             'HOOK_PAYMENT_RETURN' => $this->displayPaymentReturn($this->order),
             'order' => (new OrderPresenter())->present($this->order),
-            'order_customer' => $this->objectPresenter->present($this->customer),
+            'order_customer' => (new ObjectPresenter())->present($this->customer),
             'registered_customer_exists' => Customer::customerExists($this->customer->email, false, true),
         ]);
         $this->setTemplate('checkout/order-confirmation');
@@ -287,6 +283,45 @@ class OrderConfirmationControllerCore extends FrontController
         // it acts as a marker for the module check to use "free_payment"
         // for the check
         Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . (int) $order->currentOrder . '&key=' . $cart->secure_key);
+    }
+
+
+    /**
+     * Check if an order is free and create it.
+     */
+    protected function checkCreditOrder()
+    {
+        $cart = $this->context->cart;
+
+        $customerId = $this->context->cart->id_customer;
+        $priceTotalByCredit = $this->context->cart->getOrderTotal(true, Cart::BOTH);
+        $isCreditSufficient = (new Customer)->checkWallet($customerId, $priceTotalByCredit);
+
+        $order = new PaymentCredit();
+        $order->validateOrder(
+            $cart->id,
+            (int) Configuration::get('PS_OS_PAYMENT'),
+            0,
+            'Order credit - SiMix',
+            null,
+            [],
+            null,
+            false,
+            $cart->secure_key
+        );
+
+        // redirect back to us with rest of the data
+        // note the id_module parameter with value -1
+        // it acts as a marker for the module check to use "free_payment"
+        // for the check
+        if (!$isCreditSufficient) {
+            $names = implode(',', array_column($this->context->cart->getProducts(), "name"));
+            $this->isPaid = false;
+            Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . null . '&key=' . $cart->secure_key.'&nameProducts='. $names);
+        } else {
+            $this->isPaid = true;
+            Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . (int) $order->currentOrder . '&key=' . $cart->secure_key);
+        }
     }
 
     public function getBreadcrumbLinks()
