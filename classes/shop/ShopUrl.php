@@ -96,7 +96,7 @@ class ShopUrlCore extends ObjectModel
         }
 
         $url = ($ssl) ? 'https://' . $this->domain_ssl : 'http://' . $this->domain;
-
+        
         return $url . $this->getBaseURI();
     }
 
@@ -181,6 +181,24 @@ class ShopUrlCore extends ObjectModel
             WHERE main = 1
             AND id_shop = ' . ($id_shop !== null ? (int) $id_shop : (int) Context::getContext()->shop->id));
             if (!empty($row)) {
+                //JRE - MultiStore
+                if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')){
+                    if ($_SERVER["HTTP_HOST"] !== $row['domain_ssl']){
+                        $row2 = Db::getInstance()->getRow('
+                        SELECT domain, domain_ssl
+                        FROM ' . _DB_PREFIX_ . 'shop_url
+                        WHERE active = 1
+                        AND main = 0
+                        AND id_shop = ' . ($id_shop !== null ? (int) $id_shop : (int) Context::getContext()->shop->id));
+                        if (!empty($row2)) {
+                            if ($_SERVER["HTTP_HOST"] == $row2['domain_ssl']){
+                                $row = $row2;
+                            } 
+                        }
+                    }
+                }
+                //Fin JRE - Multistore
+
                 self::$main_domain[(int) $id_shop] = $row['domain'];
                 self::$main_domain_ssl[(int) $id_shop] = $row['domain_ssl'];
             }
