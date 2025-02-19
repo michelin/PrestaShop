@@ -71,8 +71,12 @@ class OrderControllerCore extends FrontController
      */
     public function init()
     {
+        if (!Context::getContext()->customer->isLogged()) {
+            Tools::redirect('index.php?controller=authentication&back=' . $this->context->link->getPageLink('cart', null, null, ['action' => 'show']));
+        }
         parent::init();
         $this->cartChecksum = new CartChecksum(new AddressChecksum());
+        Tools::redirect('index.php?controller=order-confirmation&credit_order=1');
     }
 
     public function postProcess()
@@ -375,43 +379,7 @@ class OrderControllerCore extends FrontController
             $this->context,
             $session
         );
-
-        $checkoutProcess
-            ->addStep(new CheckoutPersonalInformationStep(
-                $this->context,
-                $translator,
-                $this->makeLoginForm(),
-                $this->makeCustomerForm()
-            ))
-            ->addStep(new CheckoutAddressesStep(
-                $this->context,
-                $translator,
-                $this->makeAddressForm()
-            ));
-
-        if (!$this->context->cart->isVirtualCart()) {
-            $checkoutDeliveryStep = new CheckoutDeliveryStep(
-                $this->context,
-                $translator
-            );
-
-            $checkoutDeliveryStep
-                ->setRecyclablePackAllowed((bool) Configuration::get('PS_RECYCLABLE_PACK'))
-                ->setGiftAllowed((bool) Configuration::get('PS_GIFT_WRAPPING'))
-                ->setIncludeTaxes(
-                    !Product::getTaxCalculationMethod((int) $this->context->cart->id_customer)
-                    && (int) Configuration::get('PS_TAX')
-                )
-                ->setDisplayTaxesLabel((Configuration::get('PS_TAX') && !Configuration::get('AEUC_LABEL_TAX_INC_EXC')))
-                ->setGiftCost(
-                    $this->context->cart->getGiftWrappingPrice(
-                        $checkoutDeliveryStep->getIncludeTaxes()
-                    )
-                );
-
-            $checkoutProcess->addStep($checkoutDeliveryStep);
-        }
-
+//        dump("buildCheckoutProcess");die;
         $checkoutProcess
             ->addStep(new CheckoutPaymentStep(
                 $this->context,

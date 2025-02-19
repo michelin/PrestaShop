@@ -1,0 +1,492 @@
+diff --git a/classes/form/CustomerPersister.php b/classes/form/CustomerPersister.php
+index 130ac3c417..480a3f1f9e 100644
+--- a/classes/form/CustomerPersister.php
++++ b/classes/form/CustomerPersister.php
+@@ -254,25 +254,26 @@ class CustomerPersisterCore
+      */
+     private function sendConfirmationMail(Customer $customer)
+     {
+-        if ($customer->is_guest || !Configuration::get('PS_CUSTOMER_CREATION_EMAIL')) {
+-            return true;
+-        }
+-
+-        return Mail::Send(
+-            $this->context->language->id,
+-            'account',
+-            $this->translator->trans(
+-                'Welcome!',
+-                [],
+-                'Emails.Subject'
+-            ),
+-            [
+-                '{firstname}' => $customer->firstname,
+-                '{lastname}' => $customer->lastname,
+-                '{email}' => $customer->email,
+-            ],
+-            $customer->email,
+-            $customer->firstname . ' ' . $customer->lastname
+-        );
++        return true;
++//        if ($customer->is_guest || !Configuration::get('PS_CUSTOMER_CREATION_EMAIL')) {
++//            return true;
++//        }
++//
++//        return Mail::Send(
++//            $this->context->language->id,
++//            'account',
++//            $this->translator->trans(
++//                'Welcome!',
++//                [],
++//                'Emails.Subject'
++//            ),
++//            [
++//                '{firstname}' => $customer->firstname,
++//                '{lastname}' => $customer->lastname,
++//                '{email}' => $customer->email,
++//            ],
++//            $customer->email,
++//            $customer->firstname . ' ' . $customer->lastname
++//        );
+     }
+ }
+diff --git a/classes/order/OrderDetail.php b/classes/order/OrderDetail.php
+index 36677698b3..7f2d865607 100644
+--- a/classes/order/OrderDetail.php
++++ b/classes/order/OrderDetail.php
+@@ -523,6 +523,11 @@ class OrderDetailCore extends ObjectModel
+         $this->download_deadline = '0000-00-00 00:00:00';
+         $this->download_hash = null;
+ 
++        // ************** patch download_hash  **************** //
++        $download_hash = md5(uniqid(rand(), true));
++        $this->download_hash = $download_hash;
++        // ************** patch download_hash  **************** //
++
+         if ($id_product_download = ProductDownload::getIdFromIdProduct((int) $product['id_product'])) {
+             $product_download = new ProductDownload((int) $id_product_download);
+             $this->download_deadline = $product_download->getDeadLine();
+diff --git a/classes/pdf/PDFGenerator.php b/classes/pdf/PDFGenerator.php
+index 9181b88e55..f4d117223e 100644
+--- a/classes/pdf/PDFGenerator.php
++++ b/classes/pdf/PDFGenerator.php
+@@ -231,8 +231,8 @@ class PDFGeneratorCore extends TCPDF
+     public function writePage()
+     {
+         $this->SetHeaderMargin(5);
+-        $this->SetFooterMargin(21);
+-        $this->setMargins(10, 40, 10);
++        $this->SetFooterMargin(5);
++        $this->setMargins(10, 5, 10);
+         $this->AddPage();
+         $this->writeHTML($this->content, true, false, true, false, '');
+     }
+diff --git a/controllers/front/AuthController.php b/controllers/front/AuthController.php
+index f607c4a9fe..62b37af246 100644
+--- a/controllers/front/AuthController.php
++++ b/controllers/front/AuthController.php
+@@ -23,6 +23,9 @@
+  * @copyright Since 2007 PrestaShop SA and Contributors
+  * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
+  */
++
++use SiMixCore\Classes\SiMixHCaptcha;
++
+ class AuthControllerCore extends FrontController
+ {
+     /** @var bool */
+@@ -55,8 +58,14 @@ class AuthControllerCore extends FrontController
+         );
+ 
+         if (Tools::isSubmit('submitLogin')) {
+-            if ($login_form->submit()) {
+-                $should_redirect = true;
++            $recaptcha = Tools::getValue('h-captcha-response');
++            $verifyForm = SiMixHCaptcha::verifyHCaptcha($recaptcha);
++            if ($verifyForm) {
++                if ($login_form->submit()) {
++                    $should_redirect = true;
++                } else {
++                    $this->errors[] = 'The information to log in with are incorrect.';
++                }
+             }
+         }
+ 
+@@ -88,17 +97,17 @@ class AuthControllerCore extends FrontController
+         }
+     }
+ 
+-    public function getBreadcrumbLinks()
+-    {
+-        $breadcrumb = parent::getBreadcrumbLinks();
+-
+-        $breadcrumb['links'][] = [
+-            'title' => $this->trans('Log in to your account', [], 'Shop.Theme.Customeraccount'),
+-            'url' => $this->context->link->getPageLink('authentication'),
+-        ];
+-
+-        return $breadcrumb;
+-    }
++//    public function getBreadcrumbLinks()
++//    {
++//        $breadcrumb = parent::getBreadcrumbLinks();
++//
++//        $breadcrumb['links'][] = [
++//            'title' => $this->trans('Log in to your account', [], 'Shop.Theme.Customeraccount'),
++//            'url' => $this->context->link->getPageLink('authentication'),
++//        ];
++//
++//        return $breadcrumb;
++//    }
+ 
+     /**
+      * {@inheritdoc}
+diff --git a/controllers/front/OrderConfirmationController.php b/controllers/front/OrderConfirmationController.php
+index 038de3b78b..148face7ba 100644
+--- a/controllers/front/OrderConfirmationController.php
++++ b/controllers/front/OrderConfirmationController.php
+@@ -23,9 +23,11 @@
+  * @copyright Since 2007 PrestaShop SA and Contributors
+  * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
+  */
++use PrestaShop\PrestaShop\Adapter\Presenter\Object\ObjectPresenter;
+ use PrestaShop\PrestaShop\Adapter\Presenter\Order\OrderPresenter;
+ use PrestaShop\PrestaShop\Core\Security\PasswordPolicyConfiguration;
+ use ZxcvbnPhp\Zxcvbn;
++require_once _PS_MODULE_DIR_ . 'simixcore/classes/PaymentCredit.php';
+ 
+ class OrderConfirmationControllerCore extends FrontController
+ {
+@@ -46,6 +48,7 @@ class OrderConfirmationControllerCore extends FrontController
+     protected $customer;
+     public $reference; // Deprecated
+     public $order_presenter; // Deprecated
++    public $isPaid;
+ 
+     /**
+      * Initialize order confirmation controller.
+@@ -71,6 +74,10 @@ class OrderConfirmationControllerCore extends FrontController
+             $this->checkFreeOrder();
+         }
+ 
++        if (true === (bool) Tools::getValue('credit_order')) {
++            $this->checkCreditOrder();
++        }
++
+         /*
+          * Because of order splitting scenarios, we must get the data by id_cart parameter (not id_order),
+          * so we can display all orders made from this cart.
+@@ -87,25 +94,14 @@ class OrderConfirmationControllerCore extends FrontController
+ 
+         $redirectLink = $this->context->link->getPageLink('history');
+ 
+-        // The confirmation link must contain a unique order secure key matching the key saved in database,
+-        // this prevents user to view other customer's order confirmations
+-        if (!$this->id_order || !$this->id_module || !$this->secure_key || empty($this->secure_key)) {
+-            Tools::redirect($redirectLink . (Tools::isSubmit('slowvalidation') ? '&slowvalidation' : ''));
+-        }
+-
+-        if (!Validate::isLoadedObject($this->order) || $this->secure_key != $this->order->secure_key) {
+-            Tools::redirect($redirectLink);
+-        }
+-
+-        // Free order uses -1 as id_module, it has a special check here
+-        if ($this->id_module == -1) {
+-            if ($this->order->module !== 'free_order') {
+-                Tools::redirect($redirectLink);
++        if ($this->isPaid) {
++            // The confirmation link must contain a unique order secure key matching the key saved in database,
++            // this prevents user to view other customer's order confirmations
++            if (!$this->id_order || !$this->id_module || !$this->secure_key || empty($this->secure_key)) {
++                Tools::redirect($redirectLink . (Tools::isSubmit('slowvalidation') ? '&slowvalidation' : ''));
+             }
+-        } else {
+-            // Otherwise we run a normal check that module matches
+-            $module = Module::getInstanceById((int) ($this->id_module));
+-            if ($this->order->module !== $module->name) {
++
++            if (!Validate::isLoadedObject($this->order) || $this->secure_key != $this->order->secure_key) {
+                 Tools::redirect($redirectLink);
+             }
+         }
+@@ -217,7 +213,7 @@ class OrderConfirmationControllerCore extends FrontController
+             'HOOK_ORDER_CONFIRMATION' => $this->displayOrderConfirmation($this->order),
+             'HOOK_PAYMENT_RETURN' => $this->displayPaymentReturn($this->order),
+             'order' => (new OrderPresenter())->present($this->order),
+-            'order_customer' => $this->objectPresenter->present($this->customer),
++            'order_customer' => (new ObjectPresenter())->present($this->customer),
+             'registered_customer_exists' => Customer::customerExists($this->customer->email, false, true),
+         ]);
+         $this->setTemplate('checkout/order-confirmation');
+@@ -289,6 +285,45 @@ class OrderConfirmationControllerCore extends FrontController
+         Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . (int) $order->currentOrder . '&key=' . $cart->secure_key);
+     }
+ 
++
++    /**
++     * Check if an order is free and create it.
++     */
++    protected function checkCreditOrder()
++    {
++        $cart = $this->context->cart;
++
++        $customerId = $this->context->cart->id_customer;
++        $priceTotalByCredit = $this->context->cart->getOrderTotal(true, Cart::BOTH);
++        $isCreditSufficient = (new Customer)->checkWallet($customerId, $priceTotalByCredit);
++
++        $order = new PaymentCredit();
++        $order->validateOrder(
++            $cart->id,
++            (int) Configuration::get('PS_OS_PAYMENT'),
++            0,
++            'Order credit - SiMix',
++            null,
++            [],
++            null,
++            false,
++            $cart->secure_key
++        );
++
++        // redirect back to us with rest of the data
++        // note the id_module parameter with value -1
++        // it acts as a marker for the module check to use "free_payment"
++        // for the check
++        if (!$isCreditSufficient) {
++            $names = implode(',', array_column($this->context->cart->getProducts(), "name"));
++            $this->isPaid = false;
++            Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . null . '&key=' . $cart->secure_key.'&nameProducts='. $names);
++        } else {
++            $this->isPaid = true;
++            Tools::redirect('index.php?controller=order-confirmation&id_cart=' . (int) $cart->id . '&id_module=-1&id_order=' . (int) $order->currentOrder . '&key=' . $cart->secure_key);
++        }
++    }
++
+     public function getBreadcrumbLinks()
+     {
+         $breadcrumb = parent::getBreadcrumbLinks();
+diff --git a/controllers/front/OrderController.php b/controllers/front/OrderController.php
+index 03303243d0..6d5ac07690 100644
+--- a/controllers/front/OrderController.php
++++ b/controllers/front/OrderController.php
+@@ -71,8 +71,12 @@ class OrderControllerCore extends FrontController
+      */
+     public function init()
+     {
++        if (!Context::getContext()->customer->isLogged()) {
++            Tools::redirect('index.php?controller=authentication&back=' . $this->context->link->getPageLink('cart', null, null, ['action' => 'show']));
++        }
+         parent::init();
+         $this->cartChecksum = new CartChecksum(new AddressChecksum());
++        Tools::redirect('index.php?controller=order-confirmation&credit_order=1');
+     }
+ 
+     public function postProcess()
+@@ -375,43 +379,7 @@ class OrderControllerCore extends FrontController
+             $this->context,
+             $session
+         );
+-
+-        $checkoutProcess
+-            ->addStep(new CheckoutPersonalInformationStep(
+-                $this->context,
+-                $translator,
+-                $this->makeLoginForm(),
+-                $this->makeCustomerForm()
+-            ))
+-            ->addStep(new CheckoutAddressesStep(
+-                $this->context,
+-                $translator,
+-                $this->makeAddressForm()
+-            ));
+-
+-        if (!$this->context->cart->isVirtualCart()) {
+-            $checkoutDeliveryStep = new CheckoutDeliveryStep(
+-                $this->context,
+-                $translator
+-            );
+-
+-            $checkoutDeliveryStep
+-                ->setRecyclablePackAllowed((bool) Configuration::get('PS_RECYCLABLE_PACK'))
+-                ->setGiftAllowed((bool) Configuration::get('PS_GIFT_WRAPPING'))
+-                ->setIncludeTaxes(
+-                    !Product::getTaxCalculationMethod((int) $this->context->cart->id_customer)
+-                    && (int) Configuration::get('PS_TAX')
+-                )
+-                ->setDisplayTaxesLabel((Configuration::get('PS_TAX') && !Configuration::get('AEUC_LABEL_TAX_INC_EXC')))
+-                ->setGiftCost(
+-                    $this->context->cart->getGiftWrappingPrice(
+-                        $checkoutDeliveryStep->getIncludeTaxes()
+-                    )
+-                );
+-
+-            $checkoutProcess->addStep($checkoutDeliveryStep);
+-        }
+-
++//        dump("buildCheckoutProcess");die;
+         $checkoutProcess
+             ->addStep(new CheckoutPaymentStep(
+                 $this->context,
+diff --git a/controllers/front/OrderDetailController.php b/controllers/front/OrderDetailController.php
+index 5de8429465..8df3fb6c8b 100644
+--- a/controllers/front/OrderDetailController.php
++++ b/controllers/front/OrderDetailController.php
+@@ -220,7 +220,7 @@ class OrderDetailControllerCore extends FrontController
+ 
+         $breadcrumb['links'][] = $this->addMyAccountToBreadcrumb();
+         $breadcrumb['links'][] = [
+-            'title' => $this->trans('Order history', [], 'Shop.Theme.Customeraccount'),
++            'title' => $this->trans('Order history and details', [], 'Shop.Theme.Customeraccount'),
+             'url' => $this->context->link->getPageLink('history'),
+         ];
+ 
+diff --git a/controllers/front/RegistrationController.php b/controllers/front/RegistrationController.php
+index fa8eb29c3f..0f42f82fef 100644
+--- a/controllers/front/RegistrationController.php
++++ b/controllers/front/RegistrationController.php
+@@ -1,4 +1,9 @@
+ <?php
++
++use SiMixCore\Classes\CustomerAddressSiMixCore;
++use SiMixCore\Classes\SiMixCsrfToken;
++use SiMixCore\Classes\SiMixHCaptcha;
++
+ /**
+  * Copyright since 2007 PrestaShop SA and Contributors
+  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
+@@ -48,10 +53,46 @@ class RegistrationControllerCore extends FrontController
+         $register_form = $this
+             ->makeCustomerForm()
+             ->setGuestAllowed(false)
+-            ->fillWith(Tools::getAllValues());
++            ->fillWith(Tools::getAllValues())
++            ->addCustomZipCodeField()
++            ->addCustomCityField()
++            ->addCustomCountry()
++            ->addCustomAddressField();
++        $desiredOrder = [
++            'id_gender',
++            'firstname',
++            'lastname',
++            'birthday',
++            'custom_address',
++            'custom_city',
++            'custom_zip',
++            'custom_country',
++            'company',
++            'siret',
++            'email',
++            'password',
++            'psgdpr_psgdpr',
++            'ps_dataprivacy_customer_privacy',
++            'ps_emailsubscription_newsletter'
++        ];
++        $register_form->sortFields($desiredOrder);
++        $back = rawurldecode(Tools::getValue('back'));
+ 
+-        // If registration form was submitted
+         if (Tools::isSubmit('submitCreate')) {
++            $verifyForm = SiMixHCaptcha::verifyHCaptcha(Tools::getValue('h-captcha-response'));
++            $csrfToken = Tools::getValue('csrf_token_simix');
++            $isValidCsrfToken = SiMixCsrfToken::isValidCsrfToken($csrfToken);
++
++            if (!$isValidCsrfToken) {
++                $this->errors[] = 'CSRF Token not valid.';
++                return $this->redirectWithNotifications($this->context->link->getPageLink('registration'));
++            }
++
++            if (!$verifyForm) {
++                $this->errors[] = 'Recaptcha failed, try again.';
++                return $this->redirectWithNotifications($this->context->link->getPageLink('registration'));
++            }
++
+             $hookResult = array_reduce(
+                 Hook::exec('actionSubmitAccountBefore', [], null, true),
+                 function ($carry, $item) {
+@@ -66,6 +107,18 @@ class RegistrationControllerCore extends FrontController
+                 // Before that, we need to check if 'back' is legit URL that is on OUR domain, with the right protocol
+                 $back = rawurldecode(Tools::getValue('back'));
+                 if (Tools::urlBelongsToShop($back)) {
++
++                    try {
++                        CustomerAddressSiMixCore::setAddressByCustomer(
++                            Context::getContext()->customer->id,
++                            $register_form->getField('custom_address')->getValue(),
++                            $register_form->getField('custom_city')->getValue(),
++                            $register_form->getField('custom_zip')->getValue(),
++                            $register_form->getField('custom_country')->getValue()
++                        );
++                    } catch (PrestaShopException $e) {
++                    }
++                    $this->success[] = 'Thank you for signing up! Please check your email and confirm your address to complete your registration and access SiMiX.';
+                     return $this->redirectWithNotifications($back);
+                 }
+ 
+@@ -80,6 +133,7 @@ class RegistrationControllerCore extends FrontController
+         }
+ 
+         $this->context->smarty->assign([
++            'csrf_token_simix' => SiMixCsrfToken::generateToken(),
+             'register_form' => $register_form->getProxy(),
+             'hook_create_account_top' => Hook::exec('displayCustomerAccountFormTop'),
+         ]);
+@@ -93,7 +147,7 @@ class RegistrationControllerCore extends FrontController
+         $breadcrumb = parent::getBreadcrumbLinks();
+ 
+         $breadcrumb['links'][] = [
+-            'title' => $this->trans('Create an account', [], 'Shop.Theme.Customeraccount'),
++            'title' => $this->trans('Sign up', [], 'Shop.Theme.Customeraccount'),
+             'url' => $this->context->link->getPageLink('registration'),
+         ];
+ 
+diff --git a/src/Adapter/Presenter/Order/OrderLazyArray.php b/src/Adapter/Presenter/Order/OrderLazyArray.php
+index 5a206497b8..05fc42cc68 100644
+--- a/src/Adapter/Presenter/Order/OrderLazyArray.php
++++ b/src/Adapter/Presenter/Order/OrderLazyArray.php
+@@ -194,7 +194,9 @@ class OrderLazyArray extends AbstractLazyArray
+                 Currency::getCurrencyInstance((int) $order->id_currency)
+             );
+ 
+-            if ($orderPaid && $orderProduct['is_virtual']) {
++            $orderProduct['is_virtual'] =  1;
++//            if ($orderPaid && $orderProduct['is_virtual']) {
++            if ($orderPaid) {
+                 $id_product_download = ProductDownload::getIdFromIdProduct($orderProduct['product_id']);
+                 $product_download = new ProductDownload($id_product_download);
+                 if ($product_download->display_filename != '') {
+diff --git a/src/PrestaShopBundle/Controller/Admin/VirtualProductController.php b/src/PrestaShopBundle/Controller/Admin/VirtualProductController.php
+index e9d1d262f1..e3b898f976 100644
+--- a/src/PrestaShopBundle/Controller/Admin/VirtualProductController.php
++++ b/src/PrestaShopBundle/Controller/Admin/VirtualProductController.php
+@@ -30,6 +30,7 @@ use PrestaShop\PrestaShop\Adapter\Product\AdminProductWrapper;
+ use PrestaShopBundle\Entity\ProductDownload;
+ use PrestaShopBundle\Form\Admin\Product\ProductVirtual;
+ use PrestaShopBundle\Security\Annotation\AdminSecurity;
++use SiMixCore\Classes\OrderAvailableFileSiMix;
+ use Symfony\Component\HttpFoundation\BinaryFileResponse;
+ use Symfony\Component\HttpFoundation\JsonResponse;
+ use Symfony\Component\HttpFoundation\Request;
+@@ -51,6 +52,7 @@ class VirtualProductController extends FrameworkBundleAdminController
+      * @param Request $request
+      *
+      * @return JsonResponse
++     * @throws \Exception
+      */
+     public function saveAction($idProduct, Request $request)
+     {
+@@ -75,7 +77,9 @@ class VirtualProductController extends FrameworkBundleAdminController
+ 
+         $form->handleRequest($request);
+         if ($form->isValid()) {
++
+             $data = $form->getData();
++            OrderAvailableFileSiMix::handleFileAvailable($idProduct);
+             $res = $adminProductWrapper->updateDownloadProduct($product, $data);
+             $res->file_download_link =
+                 $res->filename ?
+@@ -87,7 +91,6 @@ class VirtualProductController extends FrameworkBundleAdminController
+ 
+             $product->is_virtual = 1;
+             $product->save();
+-
+             $response->setData($res);
+         } else {
+             $response->setStatusCode(400);

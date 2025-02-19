@@ -30,6 +30,7 @@ use PrestaShop\PrestaShop\Adapter\Product\AdminProductWrapper;
 use PrestaShopBundle\Entity\ProductDownload;
 use PrestaShopBundle\Form\Admin\Product\ProductVirtual;
 use PrestaShopBundle\Security\Annotation\AdminSecurity;
+use SiMixCore\Classes\OrderAvailableFileSiMix;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,6 +52,7 @@ class VirtualProductController extends FrameworkBundleAdminController
      * @param Request $request
      *
      * @return JsonResponse
+     * @throws \Exception
      */
     public function saveAction($idProduct, Request $request)
     {
@@ -75,7 +77,9 @@ class VirtualProductController extends FrameworkBundleAdminController
 
         $form->handleRequest($request);
         if ($form->isValid()) {
+
             $data = $form->getData();
+            OrderAvailableFileSiMix::handleFileAvailable($idProduct);
             $res = $adminProductWrapper->updateDownloadProduct($product, $data);
             $res->file_download_link =
                 $res->filename ?
@@ -87,7 +91,6 @@ class VirtualProductController extends FrameworkBundleAdminController
 
             $product->is_virtual = 1;
             $product->save();
-
             $response->setData($res);
         } else {
             $response->setStatusCode(400);

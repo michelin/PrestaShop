@@ -254,25 +254,26 @@ class CustomerPersisterCore
      */
     private function sendConfirmationMail(Customer $customer)
     {
-        if ($customer->is_guest || !Configuration::get('PS_CUSTOMER_CREATION_EMAIL')) {
-            return true;
-        }
-
-        return Mail::Send(
-            $this->context->language->id,
-            'account',
-            $this->translator->trans(
-                'Welcome!',
-                [],
-                'Emails.Subject'
-            ),
-            [
-                '{firstname}' => $customer->firstname,
-                '{lastname}' => $customer->lastname,
-                '{email}' => $customer->email,
-            ],
-            $customer->email,
-            $customer->firstname . ' ' . $customer->lastname
-        );
+        return true;
+//        if ($customer->is_guest || !Configuration::get('PS_CUSTOMER_CREATION_EMAIL')) {
+//            return true;
+//        }
+//
+//        return Mail::Send(
+//            $this->context->language->id,
+//            'account',
+//            $this->translator->trans(
+//                'Welcome!',
+//                [],
+//                'Emails.Subject'
+//            ),
+//            [
+//                '{firstname}' => $customer->firstname,
+//                '{lastname}' => $customer->lastname,
+//                '{email}' => $customer->email,
+//            ],
+//            $customer->email,
+//            $customer->firstname . ' ' . $customer->lastname
+//        );
     }
 }
