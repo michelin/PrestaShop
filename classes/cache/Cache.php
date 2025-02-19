@@ -89,6 +89,8 @@ abstract class CacheCore
         'page_viewed',
         'employee',
         'log',
+        'product',
+        'product_shop'
     ];
 
     /**
