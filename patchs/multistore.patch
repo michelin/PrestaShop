@@ -1,0 +1,72 @@
+diff --git a/classes/shop/Shop.php b/classes/shop/Shop.php
+index 41ccde095..bc7d6fe10 100644
+--- a/classes/shop/Shop.php
++++ b/classes/shop/Shop.php
+@@ -222,11 +222,28 @@ class ShopCore extends ObjectModel
+             return false;
+         }
+ 
++        //JRE - Multi Store
++        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')){
++            if ($_SERVER["HTTP_HOST"] !== $row['domain']){
++                $row2 = Db::getInstance()->getRow('
++                SELECT su.physical_uri, su.virtual_uri, su.domain, su.domain_ssl
++                FROM ' . _DB_PREFIX_ . 'shop s
++                LEFT JOIN ' . _DB_PREFIX_ . 'shop_url su ON (s.id_shop = su.id_shop)
++                WHERE s.id_shop = ' . (int) $this->id . '
++                AND s.active = 1 AND s.deleted = 0 AND su.main = 0');
++
++                if ($_SERVER["HTTP_HOST"] === $row2['domain']){
++                    $row = $row2;
++                }
++            }
++        }
++        //Fin JRE - Multi Store
++
+         $this->physical_uri = $row['physical_uri'];
+         $this->virtual_uri = $row['virtual_uri'];
+         $this->domain = $row['domain'];
+         $this->domain_ssl = $row['domain_ssl'];
+-
++        
+         return true;
+     }
+ 
+diff --git a/classes/shop/ShopUrl.php b/classes/shop/ShopUrl.php
+index 74f230010..a20075545 100644
+--- a/classes/shop/ShopUrl.php
++++ b/classes/shop/ShopUrl.php
+@@ -96,7 +96,7 @@ class ShopUrlCore extends ObjectModel
+         }
+ 
+         $url = ($ssl) ? 'https://' . $this->domain_ssl : 'http://' . $this->domain;
+-
++        
+         return $url . $this->getBaseURI();
+     }
+ 
+@@ -181,6 +181,24 @@ class ShopUrlCore extends ObjectModel
+             WHERE main = 1
+             AND id_shop = ' . ($id_shop !== null ? (int) $id_shop : (int) Context::getContext()->shop->id));
+             if (!empty($row)) {
++                //JRE - MultiStore
++                if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')){
++                    if ($_SERVER["HTTP_HOST"] !== $row['domain_ssl']){
++                        $row2 = Db::getInstance()->getRow('
++                        SELECT domain, domain_ssl
++                        FROM ' . _DB_PREFIX_ . 'shop_url
++                        WHERE active = 1
++                        AND main = 0
++                        AND id_shop = ' . ($id_shop !== null ? (int) $id_shop : (int) Context::getContext()->shop->id));
++                        if (!empty($row2)) {
++                            if ($_SERVER["HTTP_HOST"] == $row2['domain_ssl']){
++                                $row = $row2;
++                            } 
++                        }
++                    }
++                }
++                //Fin JRE - Multistore
++
+                 self::$main_domain[(int) $id_shop] = $row['domain'];
+                 self::$main_domain_ssl[(int) $id_shop] = $row['domain_ssl'];
+             }

@@ -225,11 +225,28 @@ class ShopCore extends ObjectModel
             return false;
         }
 
+        //JRE - Multi Store
+        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')){
+            if ($_SERVER["HTTP_HOST"] !== $row['domain']){
+                $row2 = Db::getInstance()->getRow('
+                SELECT su.physical_uri, su.virtual_uri, su.domain, su.domain_ssl
+                FROM ' . _DB_PREFIX_ . 'shop s
+                LEFT JOIN ' . _DB_PREFIX_ . 'shop_url su ON (s.id_shop = su.id_shop)
+                WHERE s.id_shop = ' . (int) $this->id . '
+                AND s.active = 1 AND s.deleted = 0 AND su.main = 0');
+
+                if ($_SERVER["HTTP_HOST"] === $row2['domain']){
+                    $row = $row2;
+                }
+            }
+        }
+        //Fin JRE - Multi Store
+
         $this->physical_uri = $row['physical_uri'];
         $this->virtual_uri = $row['virtual_uri'];
         $this->domain = $row['domain'];
         $this->domain_ssl = $row['domain_ssl'];
-
+        
         return true;
     }
 
