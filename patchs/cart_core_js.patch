@@ -1,0 +1,31 @@
+diff --git a/themes/_core/js/cart.js b/themes/_core/js/cart.js
+index 24439499e6..d129384536 100644
+--- a/themes/_core/js/cart.js
++++ b/themes/_core/js/cart.js
+@@ -97,8 +97,12 @@ $(document).ready(() => {
+   $body.on('click', '[data-button-action="add-to-cart"]', (event) => {
+     event.preventDefault();
+ 
++    // Ensure these variables are correctly defined and used
++    const location_price_id = event.currentTarget.getAttribute("data-id-product-location");
++    const location_price = $(`.priceLocationSelected_${location_price_id}`).val();
++
+     const $form = $(event.currentTarget.form);
+-    const query = `${$form.serialize()}&add=1&action=update`;
++    const query = `${$form.serialize()}&add=1&action=update&location_price=${location_price}`;
+     const actionURL = $form.attr('action');
+     const addToCartButton = $(event.currentTarget);
+ 
+@@ -150,6 +154,7 @@ $(document).ready(() => {
+               idCustomization: resp.id_customization,
+               linkAction: 'add-to-cart',
+               cart: resp.cart,
++              location_price: location_price // Ensure this is included
+             },
+             resp,
+           });
+@@ -212,3 +217,4 @@ $(document).ready(() => {
+       });
+   });
+ });
++
