@@ -26,7 +26,12 @@
 
 /* Debug only */
 if (!defined('_PS_MODE_DEV_')) {
-    define('_PS_MODE_DEV_', true);
+    $psDevMode = getenv('PS_DEV_MODE');
+    if ($psDevMode === false) {
+        define('_PS_MODE_DEV_', true);
+    } else {
+        define('_PS_MODE_DEV_', filter_var($psDevMode, FILTER_VALIDATE_BOOLEAN));
+    }
 }
 /* Compatibility warning */
 if (!defined('_PS_DISPLAY_COMPATIBILITY_WARNING_')) {

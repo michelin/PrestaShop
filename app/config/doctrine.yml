@@ -20,9 +20,9 @@ doctrine:
           # PDO::MYSQL_ATTR_MULTI_STATEMENTS
           1013: '%env(const:runtime:_PS_ALLOW_MULTI_STATEMENTS_QUERIES_)%'
           # PDO::MYSQL_ATTR_SSL_CA
-          1009: '/etc/ssl/certs/DigiCertGlobalRootCA.crt.pem'
+          1009: '%env(string:SSL_CERT_FILE)%'
           #PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
-          1014: false
+          1014: '%env(bool:MYSQL_ATTR_SSL_VERIFY_SERVER_CERT)%'
 
   orm:
     auto_generate_proxy_classes: "%kernel.debug%"
