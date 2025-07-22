@@ -20,7 +20,7 @@ doctrine:
           # PDO::MYSQL_ATTR_MULTI_STATEMENTS
           !php/const PDO::MYSQL_ATTR_MULTI_STATEMENTS: '%env(const:runtime:_PS_ALLOW_MULTI_STATEMENTS_QUERIES_)%'
           # PDO::MYSQL_ATTR_SSL_CA
-          !php/const PDO::MYSQL_ATTR_SSL_CA: '/etc/ssl/certs/DigiCertGlobalRootCA.crt.pem'
+          !php/const PDO::MYSQL_ATTR_SSL_CA: '%env(string:SSL_CERT_FILE)%'
           #PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
           !php/const PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT: false
 
