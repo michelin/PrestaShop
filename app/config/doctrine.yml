@@ -22,7 +22,7 @@ doctrine:
           # PDO::MYSQL_ATTR_SSL_CA
           1009: '%env(string:SSL_CERT_FILE)%'
           #PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
-          1014: '%env(bool:MYSQL_ATTR_SSL_VERIFY_SERVER_CERT)%'
+          1014: false
 
   orm:
     auto_generate_proxy_classes: "%kernel.debug%"

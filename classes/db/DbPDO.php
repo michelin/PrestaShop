@@ -73,7 +73,7 @@ class DbPDOCore extends Db
                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4',
                 PDO::MYSQL_ATTR_MULTI_STATEMENTS => _PS_ALLOW_MULTI_STATEMENTS_QUERIES_,
                 PDO::MYSQL_ATTR_SSL_CA => getenv('SSL_CERT_FILE'),
-                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => getenv('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') ? true : false,
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => filter_var(getenv('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN),
             ]
         );
     }
