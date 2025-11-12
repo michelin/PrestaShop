@@ -71,7 +71,7 @@ if (!defined('_PS_API_DOMAIN_')) {
     define('_PS_API_DOMAIN_', 'api.prestashop.com');
 }
 if (!defined('_PS_API_URL_')) {
-    define('_PS_API_URL_', 'http://' . _PS_API_DOMAIN_);
+    define('_PS_API_URL_', 'https://' . _PS_API_DOMAIN_);
 }
 /** @deprecated Since 1.7.7 */
 Tools::safeDefine('_PS_TAB_MODULE_LIST_URL_', '');
