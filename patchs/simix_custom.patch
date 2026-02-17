@@ -490,3 +490,16 @@ index e9d1d262f1..e3b898f976 100644
              $response->setData($res);
          } else {
              $response->setStatusCode(400);
+diff --git a/back/themes/default/js/bundle/product/form.js b/back/themes/default/js/bundle/product/form.js
+index 3c323b318f..398881f486 100644
+--- a/back/themes/default/js/bundle/product/form.js
++++ b/back/themes/default/js/bundle/product/form.js
+@@ -94,7 +94,10 @@ function resetEditor() {
+  * Manage show or hide fields
+  */
+ window.displayFieldsManager = (function () {
+-  const typeProduct = $('#form_step1_type_product');
++  // const typeProduct = $('#form_step1_type_product');
++  //$('.form_step1_type_product').css("visibility","hidden");
++  const typeProduct = $('#form_step1_type_product').val(2);
++
