@@ -94,6 +94,7 @@ function resetEditor() {
  * Manage show or hide fields
  */
 window.displayFieldsManager = (function () {
+  
   // const typeProduct = $('#form_step1_type_product');
   //$('.form_step1_type_product').css("visibility","hidden");
   const typeProduct = $('#form_step1_type_product').val(2);
